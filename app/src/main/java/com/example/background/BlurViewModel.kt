@@ -15,7 +15,6 @@
  */
 
 package com.example.background
-
 import android.app.Application
 import android.content.ContentResolver
 import android.content.Context
@@ -28,15 +27,13 @@ import com.example.background.workers.BlurWorker
 import com.example.background.workers.CleanupWorker
 import com.example.background.workers.SaveImageToFileWorker
 
-
 class BlurViewModel(application: Application) : ViewModel() {
 
     private val workManager = WorkManager.getInstance(application)
 
-    internal var imageUri: Uri? = null
+    private var imageUri: Uri? = null
     internal var outputUri: Uri? = null
     internal val outputWorkInfos : LiveData<List<WorkInfo>>
-
 
     init {
         imageUri = getImageUri(application.applicationContext)
@@ -70,7 +67,12 @@ class BlurViewModel(application: Application) : ViewModel() {
             continuation = continuation.then(blurBuilder.build())
         }
 
+        val constraints = Constraints.Builder()
+            .setRequiresCharging(true)
+            .build()
+
         val save = OneTimeWorkRequest.Builder(SaveImageToFileWorker::class.java)
+            .setConstraints(constraints)
             .addTag(TAG_OUTPUT)
             .build()
 
@@ -111,6 +113,9 @@ class BlurViewModel(application: Application) : ViewModel() {
         outputUri = uriOrNull(outputImageUri)
     }
 
+    internal fun cancelWork() {
+        workManager.cancelUniqueWork(IMAGE_MANIPULATION_WORK_NAME)
+    }
 
     class BlurViewModelFactory(private val application: Application) :
         ViewModelProvider.Factory {
